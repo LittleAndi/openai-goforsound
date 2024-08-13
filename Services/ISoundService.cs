@@ -1,11 +1,11 @@
 namespace Services;
 
-public interface ISoundCreator
+public interface ISoundService
 {
     Task Play(string text, GeneratedSpeechVoice voice, Guid? deviceId = null);
 }
 
-public class SoundCreator(IOptions<OpenAIOptions> options) : ISoundCreator
+public class SoundService(IOptions<OpenAIOptions> options) : ISoundService
 {
     private readonly OpenAIOptions options = options.Value;
 
