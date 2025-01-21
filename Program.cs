@@ -12,25 +12,29 @@ app.AddCommand("devices", () =>
     }
 });
 
-app.AddCommand("tts-text", async (string text, ISoundService soundService, GeneratedSpeechVoice voice = GeneratedSpeechVoice.Nova, string? deviceId = null) =>
+app.AddCommand("tts-text", async (string text, ISoundService soundService, GeneratedSpeechVoice? voice, string? deviceId = null) =>
 {
+    voice ??= GeneratedSpeechVoice.Nova;
+
     Guid? device = null;
     if (deviceId != null)
     {
         device = Guid.Parse(deviceId);
     }
-    await soundService.Play(text, voice, device);
+    await soundService.Play(text, (GeneratedSpeechVoice)voice, device);
 });
 
-app.AddCommand("tts-file", async (string filename, ISoundService soundService, GeneratedSpeechVoice voice = GeneratedSpeechVoice.Nova, string? deviceId = null) =>
+app.AddCommand("tts-file", async (string filename, ISoundService soundService, GeneratedSpeechVoice? voice, string? deviceId = null) =>
 {
+    voice ??= GeneratedSpeechVoice.Nova;
+
     Guid? device = null;
     if (deviceId != null)
     {
         device = Guid.Parse(deviceId);
     }
     var text = File.ReadAllText(filename);
-    await soundService.Play(text, voice, device);
+    await soundService.Play(text, (GeneratedSpeechVoice)voice, device);
 });
 
 await app.RunAsync();

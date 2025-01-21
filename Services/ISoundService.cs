@@ -20,7 +20,7 @@ public class SoundService(IOptions<OpenAIOptions> options) : ISoundService
             ResponseFormat = GeneratedSpeechFormat.Mp3,
         };
 
-        var result = await client.GenerateSpeechFromTextAsync(text, voice, speechGenerationOptions);
+        var result = await client.GenerateSpeechAsync(text, voice, speechGenerationOptions);
 
         var filename = $"{DateTime.Now:yyyyMMdd_HHmmss}.mp3";
 
