@@ -1,10 +1,11 @@
-﻿var builder = CoconaApp.CreateBuilder();
+﻿var builder = Host.CreateApplicationBuilder(args);
+
+// Register services
 builder.Services.AddOptions<OpenAIOptions>().Bind(builder.Configuration.GetSection(OpenAIOptions.Section));
 builder.Services.AddSingleton<ISoundService, SoundService>();
 
-var app = builder.Build();
-
-app.AddCommand("devices", () =>
+// Register commands
+builder.AddCommand("devices", "List available audio devices", () =>
 {
     foreach (var device in DirectSoundOut.Devices)
     {
@@ -12,34 +13,36 @@ app.AddCommand("devices", () =>
     }
 });
 
-app.AddCommand("tts-text", async (string text, ISoundService soundService, GeneratedSpeechVoice? voice, string? deviceId = null) =>
+builder.AddCommand("tts-text", "Generate and play text-to-speech", async (
+    ISoundService soundService,
+    string text,
+    [Option("voice", Description = "Voice to use (e.g., Nova)")] string? voice = null,
+    [Option("device", Description = "Device ID to use")] string? deviceId = null) =>
 {
-    voice ??= GeneratedSpeechVoice.Nova;
-
-    Guid? device = null;
-    if (deviceId != null)
-    {
-        device = Guid.Parse(deviceId);
-    }
-    await soundService.Play(text, (GeneratedSpeechVoice)voice, device);
+    var voiceEnum = voice != null ? (GeneratedSpeechVoice)Enum.Parse(typeof(GeneratedSpeechVoice), voice) : GeneratedSpeechVoice.Nova;
+    Guid? device = deviceId != null ? Guid.Parse(deviceId) : null;
+    await soundService.Play(text, voiceEnum, device);
 });
 
-app.AddCommand("tts-file", async (string filename, ISoundService soundService, GeneratedSpeechVoice? voice, string? deviceId = null) =>
+builder.AddCommand("tts-file", "Generate and play audio from a text file", async (
+    ISoundService soundService,
+    string filename,
+    [Option("voice", Description = "Voice to use (e.g., Nova)")] string? voice = null,
+    [Option("device", Description = "Device ID to use")] string? deviceId = null) =>
 {
-    voice ??= GeneratedSpeechVoice.Nova;
-
-    Guid? device = null;
-    if (deviceId != null)
-    {
-        device = Guid.Parse(deviceId);
-    }
+    var voiceEnum = voice != null ? (GeneratedSpeechVoice)Enum.Parse(typeof(GeneratedSpeechVoice), voice) : GeneratedSpeechVoice.Nova;
+    Guid? device = deviceId != null ? Guid.Parse(deviceId) : null;
     var text = File.ReadAllText(filename);
-    await soundService.Play(text, (GeneratedSpeechVoice)voice, device);
+    await soundService.Play(text, voiceEnum, device);
 });
 
-app.AddCommand("analyze", async (string filename, ISoundService soundService, string? output = null) =>
+builder.AddCommand("analyze", "Analyze audio file frequencies", async (
+    ISoundService soundService,
+    string filename,
+    [Option("output", Description = "Output file path")] string? output = null) =>
 {
     await soundService.AnalyzeFrequencies(filename, output);
 });
 
-await app.RunAsync();
+var host = builder.Build();
+return await host.RunCommandsAsync(args);
