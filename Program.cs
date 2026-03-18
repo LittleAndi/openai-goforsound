@@ -3,6 +3,7 @@
 // Register services
 builder.Services.AddOptions<OpenAIOptions>().Bind(builder.Configuration.GetSection(OpenAIOptions.Section));
 builder.Services.AddSingleton<ISoundService, SoundService>();
+builder.Services.AddSingleton<IEpubService, EpubService>();
 
 // Register commands
 builder.AddCommand("devices", "List available audio devices", () =>
@@ -84,6 +85,25 @@ builder.AddCommand("analyze", "Analyze audio file frequencies", async (
     [Option("output", Description = "Output file path")] string? output = null) =>
 {
     await soundService.AnalyzeFrequencies(filename, output);
+});
+
+builder.AddCommand("epub-to-audio", "Convert an epub book to markdown and audio files (one per chapter)", async (
+    IEpubService epubService,
+    string filename,
+    [Option("voice", Description = "Voice to use (e.g., Nova)")] string? voice = null) =>
+{
+    GeneratedSpeechVoice voiceEnum;
+    if (voice is null)
+    {
+        voiceEnum = GeneratedSpeechVoice.Nova;
+    }
+    else if (!Enum.TryParse<GeneratedSpeechVoice>(voice, ignoreCase: true, out voiceEnum))
+    {
+        Console.Error.WriteLine($"Invalid voice '{voice}'. Valid voices: {string.Join(", ", Enum.GetNames(typeof(GeneratedSpeechVoice)))}");
+        return;
+    }
+
+    await epubService.ConvertEpubToAudioAsync(filename, voiceEnum);
 });
 
 var host = builder.Build();
