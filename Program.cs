@@ -19,8 +19,29 @@ builder.AddCommand("tts-text", "Generate and play text-to-speech", async (
     [Option("voice", Description = "Voice to use (e.g., Nova)")] string? voice = null,
     [Option("device", Description = "Device ID to use")] string? deviceId = null) =>
 {
-    var voiceEnum = voice != null ? (GeneratedSpeechVoice)Enum.Parse(typeof(GeneratedSpeechVoice), voice) : GeneratedSpeechVoice.Nova;
-    Guid? device = deviceId != null ? Guid.Parse(deviceId) : null;
+    GeneratedSpeechVoice voiceEnum;
+    if (voice is null)
+    {
+        voiceEnum = GeneratedSpeechVoice.Nova;
+    }
+    else if (!Enum.TryParse<GeneratedSpeechVoice>(voice, ignoreCase: true, out voiceEnum))
+    {
+        Console.Error.WriteLine($"Invalid voice '{voice}'. Valid voices: {string.Join(", ", Enum.GetNames(typeof(GeneratedSpeechVoice)))}");
+        return;
+    }
+
+    Guid? device = null;
+    if (deviceId != null)
+    {
+        if (!Guid.TryParse(deviceId, out var parsedDevice))
+        {
+            Console.Error.WriteLine($"Invalid device ID '{deviceId}'. Please provide a valid GUID.");
+            return;
+        }
+
+        device = parsedDevice;
+    }
+
     await soundService.Play(text, voiceEnum, device);
 });
 
@@ -30,8 +51,29 @@ builder.AddCommand("tts-file", "Generate and play audio from a text file", async
     [Option("voice", Description = "Voice to use (e.g., Nova)")] string? voice = null,
     [Option("device", Description = "Device ID to use")] string? deviceId = null) =>
 {
-    var voiceEnum = voice != null ? (GeneratedSpeechVoice)Enum.Parse(typeof(GeneratedSpeechVoice), voice) : GeneratedSpeechVoice.Nova;
-    Guid? device = deviceId != null ? Guid.Parse(deviceId) : null;
+    GeneratedSpeechVoice voiceEnum;
+    if (voice is null)
+    {
+        voiceEnum = GeneratedSpeechVoice.Nova;
+    }
+    else if (!Enum.TryParse<GeneratedSpeechVoice>(voice, ignoreCase: true, out voiceEnum))
+    {
+        Console.Error.WriteLine($"Invalid voice '{voice}'. Valid voices: {string.Join(", ", Enum.GetNames(typeof(GeneratedSpeechVoice)))}");
+        return;
+    }
+
+    Guid? device = null;
+    if (deviceId != null)
+    {
+        if (!Guid.TryParse(deviceId, out var parsedDevice))
+        {
+            Console.Error.WriteLine($"Invalid device ID '{deviceId}'. Please provide a valid GUID.");
+            return;
+        }
+
+        device = parsedDevice;
+    }
+
     var text = File.ReadAllText(filename);
     await soundService.Play(text, voiceEnum, device);
 });
