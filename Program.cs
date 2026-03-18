@@ -9,7 +9,7 @@ builder.AddCommand("devices", "List available audio devices", () =>
 {
     foreach (var device in DirectSoundOut.Devices)
     {
-        Console.WriteLine($"{device.ModuleName}: {device.Description}");
+        Console.WriteLine($"{device.Guid} - {device.ModuleName}: {device.Description}");
     }
 });
 
