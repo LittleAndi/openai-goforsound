@@ -1,45 +1,90 @@
-﻿var builder = CoconaApp.CreateBuilder();
+﻿var builder = Host.CreateApplicationBuilder(args);
+
+// Register services
 builder.Services.AddOptions<OpenAIOptions>().Bind(builder.Configuration.GetSection(OpenAIOptions.Section));
 builder.Services.AddSingleton<ISoundService, SoundService>();
 
-var app = builder.Build();
-
-app.AddCommand("devices", () =>
+// Register commands
+builder.AddCommand("devices", "List available audio devices", () =>
 {
     foreach (var device in DirectSoundOut.Devices)
     {
-        Console.WriteLine($"{device.ModuleName}: {device.Description}");
+        Console.WriteLine($"{device.Guid} - {device.ModuleName}: {device.Description}");
     }
 });
 
-app.AddCommand("tts-text", async (string text, ISoundService soundService, GeneratedSpeechVoice? voice, string? deviceId = null) =>
+builder.AddCommand("tts-text", "Generate and play text-to-speech", async (
+    ISoundService soundService,
+    string text,
+    [Option("voice", Description = "Voice to use (e.g., Nova)")] string? voice = null,
+    [Option("device", Description = "Device ID to use")] string? deviceId = null) =>
 {
-    voice ??= GeneratedSpeechVoice.Nova;
+    GeneratedSpeechVoice voiceEnum;
+    if (voice is null)
+    {
+        voiceEnum = GeneratedSpeechVoice.Nova;
+    }
+    else if (!Enum.TryParse<GeneratedSpeechVoice>(voice, ignoreCase: true, out voiceEnum))
+    {
+        Console.Error.WriteLine($"Invalid voice '{voice}'. Valid voices: {string.Join(", ", Enum.GetNames(typeof(GeneratedSpeechVoice)))}");
+        return;
+    }
 
     Guid? device = null;
     if (deviceId != null)
     {
-        device = Guid.Parse(deviceId);
+        if (!Guid.TryParse(deviceId, out var parsedDevice))
+        {
+            Console.Error.WriteLine($"Invalid device ID '{deviceId}'. Please provide a valid GUID.");
+            return;
+        }
+
+        device = parsedDevice;
     }
-    await soundService.Play(text, (GeneratedSpeechVoice)voice, device);
+
+    await soundService.Play(text, voiceEnum, device);
 });
 
-app.AddCommand("tts-file", async (string filename, ISoundService soundService, GeneratedSpeechVoice? voice, string? deviceId = null) =>
+builder.AddCommand("tts-file", "Generate and play audio from a text file", async (
+    ISoundService soundService,
+    string filename,
+    [Option("voice", Description = "Voice to use (e.g., Nova)")] string? voice = null,
+    [Option("device", Description = "Device ID to use")] string? deviceId = null) =>
 {
-    voice ??= GeneratedSpeechVoice.Nova;
+    GeneratedSpeechVoice voiceEnum;
+    if (voice is null)
+    {
+        voiceEnum = GeneratedSpeechVoice.Nova;
+    }
+    else if (!Enum.TryParse<GeneratedSpeechVoice>(voice, ignoreCase: true, out voiceEnum))
+    {
+        Console.Error.WriteLine($"Invalid voice '{voice}'. Valid voices: {string.Join(", ", Enum.GetNames(typeof(GeneratedSpeechVoice)))}");
+        return;
+    }
 
     Guid? device = null;
     if (deviceId != null)
     {
-        device = Guid.Parse(deviceId);
+        if (!Guid.TryParse(deviceId, out var parsedDevice))
+        {
+            Console.Error.WriteLine($"Invalid device ID '{deviceId}'. Please provide a valid GUID.");
+            return;
+        }
+
+        device = parsedDevice;
     }
+
     var text = File.ReadAllText(filename);
-    await soundService.Play(text, (GeneratedSpeechVoice)voice, device);
+    await soundService.Play(text, voiceEnum, device);
 });
 
-app.AddCommand("analyze", async (string filename, ISoundService soundService, string? output = null) =>
+builder.AddCommand("analyze", "Analyze audio file frequencies", async (
+    ISoundService soundService,
+    string filename,
+    [Option("output", Description = "Output file path")] string? output = null) =>
 {
     await soundService.AnalyzeFrequencies(filename, output);
 });
 
-await app.RunAsync();
+var host = builder.Build();
+return await host.RunCommandsAsync(args);
