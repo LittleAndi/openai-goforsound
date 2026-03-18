@@ -6,6 +6,7 @@
 *.mp3
 *.wav
 *.txt
+*.csv
 appsettings*.json
 
 # dotenv files

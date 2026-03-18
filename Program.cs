@@ -37,4 +37,9 @@ app.AddCommand("tts-file", async (string filename, ISoundService soundService, G
     await soundService.Play(text, (GeneratedSpeechVoice)voice, device);
 });
 
+app.AddCommand("analyze", async (string filename, ISoundService soundService, string? output = null) =>
+{
+    await soundService.AnalyzeFrequencies(filename, output);
+});
+
 await app.RunAsync();
